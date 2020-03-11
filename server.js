@@ -2,7 +2,13 @@ const express=require('express');
 const app=express();
 var bodyParser=require('body-parser');
 const mongoose=require('mongoose');
-//const schema=require('./index');
+const sessions=require('client-sessions');
+
+app.use(sessions({
+    cookieName: "session",
+    secret:'wtftopsecretbsdk',
+    duration: 5*60*1000
+}))
 
 mongoose.connect('mongodb://localhost/playground',{useNewUrlParser:true,  useUnifiedTopology: true})
     .then(()=>console.log('connected'))
@@ -54,10 +60,25 @@ app.post('/login',(req,res)=>{
             res.sendFile(__dirname+'/login.html')
         }
         else{
+            req.session.uID=course._id;
             res.sendFile(__dirname+'/dashboard.html')
         }
     })
 
+})
+
+app.get('/dashboard',(req,res)=>{
+    if(!(req.session && req.session.uID)){
+        res.sendFile(__dirname+'/login.html')
+    }
+    else{
+        Course.findById(req.session.uID,(err,user)=>{
+            if(err) console.log(err)
+            if(!user) res.sendFile(__dirname+'/login.html')
+            else
+                res.sendFile(__dirname+'/dashboard.html')
+        })
+    }
 })
 
 app.listen(3000)
