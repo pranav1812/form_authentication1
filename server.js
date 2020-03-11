@@ -3,6 +3,7 @@ const app=express();
 var bodyParser=require('body-parser');
 const mongoose=require('mongoose');
 const sessions=require('client-sessions');
+const bcrypt=require('bcryptjs')
 
 app.use(sessions({
     cookieName: "session",
@@ -37,13 +38,15 @@ app.use(bodyParser.urlencoded({extended:true}));
 
 const Course=mongoose.model('Course',courseSchema);
 app.post('/form',(req,res)=>{
-    res.send(req.body);
+    //res.send(req.body);
+    var hash=bcrypt.hashSync(req.body.password,14);
+    req.body.password=hash;
+
     const myData=new Course(req.body);
     myData.save()
         .then(item=> {
             console.log(item);
-            Course.find({username:"abcxyz"})
-                .then((courses=> console.log(courses)))
+
         })
         .catch(err=>{
             res.status(400).send("unable to save to database");
@@ -55,7 +58,7 @@ app.post('/form',(req,res)=>{
 app.post('/login',(req,res)=>{
     //res.send(req.body);
     Course.findOne({ email:req.body.email},(err,course)=>{
-        if(err|| !course || req.body.password!=course.password){
+        if(err|| !course || !bcrypt.compareSync(req.body.password, course.password)){
             console.log('wrong username / password');
             res.sendFile(__dirname+'/login.html')
         }
@@ -82,3 +85,4 @@ app.get('/dashboard',(req,res)=>{
 })
 
 app.listen(3000)
+// csurf remaining
